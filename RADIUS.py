@@ -348,7 +348,7 @@ class RADIUS:
         self.authenticator = None
         self.identifier = 0
 
-    def is_credential_valid(self, username, password):
+    def is_credential_valid(self, username, password, fail_silently=False):
         """
         Checks if the provided username and password are valid.
 
@@ -356,14 +356,19 @@ class RADIUS:
         :type username: str
         :param password: the password
         :type password: str
+        :type fail_silently: raise exception or juste False
+        :type fail_silently: bool
         :return: True or False
         :rtype: bool
         """
 
         try:
             return self._access_request_eap_mschapv2(username.encode('utf8'), password)
-        except (ValueError, socket.error):
-            return False
+        except (ValueError, socket.error) as e:
+            if fail_silently:
+                return False
+            else:
+                raise e
 
     def _access_request_eap_mschapv2(self, username, password):
         """
