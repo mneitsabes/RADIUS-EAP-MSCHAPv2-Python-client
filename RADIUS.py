@@ -464,6 +464,9 @@ class RADIUS:
             if response_eap.code != EAPPacket.CODE_REQUEST:
                 raise ValueError('Stage 1 : the server doesn\'t respond as expected')
 
+        if response_eap.type != EAPPacket.TYPE_EAP_MS_AUTH:
+            raise ValueError('Stage 1 : the server doesn\'t respond as expected')
+
         response_eap_mschap2 = MSCHAPv2Packet.from_bytes(response_eap.data)
 
         if response_eap_mschap2.opcode != MSCHAPv2Packet.OPCODE_CHALLENGE:
