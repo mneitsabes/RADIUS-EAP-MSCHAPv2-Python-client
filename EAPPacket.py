@@ -103,8 +103,7 @@ class EAPPacket:
     @staticmethod
     def legacyNak(identifiier=None):
         """
-        Get the bytes of a EAP packet with the code RESPONSE, the type EAP_MS_AUTH, the provided MSCHAP packet data and
-        identifier.
+        Get the bytes of a EAP packet with the code RESPONSE, the type NAK, requesting MSCHAP with identifier.
 
         :param identifiier: the identifier
         :type identifiier: int|None
