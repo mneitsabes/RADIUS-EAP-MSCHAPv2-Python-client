@@ -457,7 +457,9 @@ class RADIUS:
             packet_to_send.set_raw_attribute(24, state)
             packet_to_send.set_attribute(79, EAPPacket.legacyNak(response_eap.id))
             packet_to_send.set_include_message_authenticator()
+            
             response_packet = self._send_and_read(packet_to_send)
+            
             state = response_packet.get_raw_attribute(24)
 
             response_eap = EAPPacket.from_bytes(response_packet.get_raw_attribute(79)[2:])
