@@ -10,9 +10,13 @@ library, see [here](https://github.com/pyradius/pyrad/issues/40)).
 This library **only supports** EAP-MSCHAPv2. This code has been tested with Microsoft Windows Server 2016 Network 
 Policy Server.
 
+# Installation
+
+	pip3 install radius-eap-mschapv2-client
+
 # Usage
 
-<pre>from RADIUS import RADIUS
+<pre>from radius_eap_mschapv2 import RADIUS
 
 radius_host = '10.1.2.3'
 radius_secret = 'r4d!us_$3cr3t'
