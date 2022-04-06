@@ -448,12 +448,29 @@ class RADIUS:
         if response_eap.code != EAPPacket.CODE_REQUEST:
             raise ValueError('Stage 1 : the server doesn\'t respond as expected')
 
+        state = response_packet.get_raw_attribute(24)
+
+        if response_eap.type == EAPPacket.TYPE_MD5_CHALLENGE:
+            state = response_packet.get_raw_attribute(24)
+            packet_to_send = RADIUSPacket(RADIUSPacket.TYPE_ACCESS_REQUEST, self.authenticator)
+            packet_to_send.set_attribute(1, username)
+            packet_to_send.set_raw_attribute(24, state)
+            packet_to_send.set_attribute(79, EAPPacket.legacyNak(response_eap.id))
+            packet_to_send.set_include_message_authenticator()
+            response_packet = self._send_and_read(packet_to_send)
+            state = response_packet.get_raw_attribute(24)
+
+            response_eap = EAPPacket.from_bytes(response_packet.get_raw_attribute(79)[2:])
+            if response_eap.code != EAPPacket.CODE_REQUEST:
+                raise ValueError('Stage 1 : the server doesn\'t respond as expected')
+
+        if response_eap.type != EAPPacket.TYPE_EAP_MS_AUTH:
+            raise ValueError('Stage 1 : the server doesn\'t respond as expected')
+
         response_eap_mschap2 = MSCHAPv2Packet.from_bytes(response_eap.data)
 
         if response_eap_mschap2.opcode != MSCHAPv2Packet.OPCODE_CHALLENGE:
             raise ValueError('Stage 1 : the server doesn\'t respond as expected')
-
-        state = response_packet.get_raw_attribute(24)
 
         # Generate a new peer challenge
         peer_challenge = self._generate_random_bytes(16)

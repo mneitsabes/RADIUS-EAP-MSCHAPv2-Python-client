@@ -100,6 +100,24 @@ class EAPPacket:
 
         return packet.__bytes__()
 
+    @staticmethod
+    def legacyNak(identifiier=None):
+        """
+        Get the bytes of a EAP packet with the code RESPONSE, the type NAK, requesting MSCHAP with identifier.
+
+        :param identifiier: the identifier
+        :type identifiier: int|None
+        :return: the packet bytes data
+        :rtype: bytes
+        """
+
+        packet = EAPPacket()
+        packet.set_id(identifiier)
+        packet.code = EAPPacket.CODE_RESPONSE
+        packet.type = EAPPacket.TYPE_NAK
+        packet.data = bytearray([EAPPacket.TYPE_EAP_MS_AUTH])
+
+        return packet.__bytes__()
 
     @staticmethod
     def mschapv2(mschapv2_packet, identifiier=None):
