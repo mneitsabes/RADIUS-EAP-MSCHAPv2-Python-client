@@ -5,8 +5,8 @@ import random
 
 from Crypto.Hash import HMAC, MD5
 
-from EAPPacket import EAPPacket
-from MSCHAPv2 import MSCHAPv2Packet, MSCHAPv2Crypto
+from .EAPPacket import EAPPacket
+from .MSCHAPv2 import MSCHAPv2Packet, MSCHAPv2Crypto, VendorSpecificPacket, MSCHAPv2Response
 
 
 class RADIUSPacket:
@@ -317,10 +317,10 @@ class RADIUSPacket:
 
 class RADIUS:
     """
-    RADIUS client for EAP-MSCHAPv2 authentification
+    RADIUS client for MSCHAPv2/EAP-MSCHAPv2 authentification
     """
 
-    def __init__(self, host, shared_secret, nas_ip, nas_identifier, port=1812, timeout=5,):
+    def __init__(self, host, shared_secret, nas_ip, nas_identifier, port=1812, timeout=5, eap=True):
         """
         
         :param host: the RADIUS host
@@ -335,6 +335,8 @@ class RADIUS:
         :type port: int
         :param timeout: the server timeout in seconds. Default: 5
         :type timeout: int
+        :param eap: Whether to use EAP or legacy MSCHAPv2. Default: True
+        :type eap: bool
         """
 
         self.server = host
@@ -347,6 +349,7 @@ class RADIUS:
 
         self.authenticator = None
         self.identifier = 0
+        self.eap = eap
 
     def is_credential_valid(self, username, password, fail_silently=False):
         """
@@ -363,12 +366,79 @@ class RADIUS:
         """
 
         try:
-            return self._access_request_eap_mschapv2(username.encode('utf8'), password)
+            if self.eap:
+                return self._access_request_eap_mschapv2(username.encode('utf8'), password)
+            return self._access_request_mschapv2(username.encode('utf8'), password)
         except (ValueError, socket.error) as e:
             if fail_silently:
                 return False
             else:
                 raise e
+
+    def _access_request_mschapv2(self, username, password):
+        """
+        Attempt to achieve user authentication with the provided username and password in legacy MSCHAPv2.
+
+        RADIUS MSCHAPv2 Process:
+            > RADIUS ACCESS_REQUEST with MSCHAP identity packet
+            < ACCESS_ACCEPT with MSCHAP success packet
+
+        :param username: the username
+        :type username: bytes
+        :param password: the password
+        :type password: str
+        :return: True or False
+        :rtype: bool
+        :raise socket.error or ValueError
+        """
+
+        # Generate the request authenticator
+        self.authenticator = self._generate_random_bytes(16)
+
+        # Stage one :
+        #   The client sends the first ACCESS REQUEST with MSCHAP identity
+        #
+        # The packet contains :
+        #   - the NAS IP address if defined
+        #   - the NAS identifier if defined
+        #   - the username (attribute type 1)
+        #   - The attribute type 6 with value 1 for the login phase
+        #   - the vendor-specific (attribute type 26) containing MSCHAP challenge
+        #   - the vendor-specific (attribute type 26) containing MSCHAP challenge response
+        #   - the message authenticator
+        #
+        packet_to_send = RADIUSPacket(RADIUSPacket.TYPE_ACCESS_REQUEST, self.authenticator)
+
+        if self.nas_ip_address:
+            packet_to_send.set_attribute(4, self.nas_ip_address)
+
+        if self.nas_identifier:
+            packet_to_send.set_attribute(32, self.nas_identifier)
+
+        # The username is added
+        packet_to_send.set_attribute(1, username)
+        packet_to_send.set_attribute(6, 1)
+
+        # Generate a new challenges
+        auth_challenge = self._generate_random_bytes(16)
+        peer_challenge = self._generate_random_bytes(16)
+        challengePacket = VendorSpecificPacket(VendorSpecificPacket.VENDOR_MICROSOFT, VendorSpecificPacket.TYPE_MSCHAP_CHALLENGE, auth_challenge)
+        packet_to_send.set_attribute(26, challengePacket.__bytes__())
+
+        # calculate response
+        mschapv2_crypto = MSCHAPv2Crypto(0,
+                                         auth_challenge,
+                                         peer_challenge,
+                                         username,
+                                         password)
+        mschapResponse =  MSCHAPv2Response(peer_challenge, mschapv2_crypto.challenge_response())
+        responsePacket = VendorSpecificPacket(VendorSpecificPacket.VENDOR_MICROSOFT, VendorSpecificPacket.TYPE_MSCHAP_RESPONSE, mschapResponse.__bytes__())
+        packet_to_send.set_attribute(26, responsePacket.__bytes__())
+
+        # Final response of the server
+        packet_to_send.set_include_message_authenticator()
+        response_packet = self._send_and_read(packet_to_send)
+        return response_packet.packet_type == RADIUSPacket.TYPE_ACCESS_ACCEPT
 
     def _access_request_eap_mschapv2(self, username, password):
         """
@@ -454,18 +524,18 @@ class RADIUS:
             state = response_packet.get_raw_attribute(24)
             packet_to_send = RADIUSPacket(RADIUSPacket.TYPE_ACCESS_REQUEST, self.authenticator)
             packet_to_send.set_attribute(1, username)
-            packet_to_send.set_raw_attribute(24, state)
             packet_to_send.set_attribute(79, EAPPacket.legacyNak(response_eap.id))
+            packet_to_send.set_raw_attribute(24, state)
             packet_to_send.set_include_message_authenticator()
             response_packet = self._send_and_read(packet_to_send)
             state = response_packet.get_raw_attribute(24)
 
             response_eap = EAPPacket.from_bytes(response_packet.get_raw_attribute(79)[2:])
             if response_eap.code != EAPPacket.CODE_REQUEST:
-                raise ValueError('Stage 1 : the server doesn\'t respond as expected')
+                raise ValueError('Stage 1b : the server doesn\'t respond as expected')
 
         if response_eap.type != EAPPacket.TYPE_EAP_MS_AUTH:
-            raise ValueError('Stage 1 : the server doesn\'t respond as expected')
+            raise ValueError('Stage 1b : the server doesn\'t respond as expected')
 
         response_eap_mschap2 = MSCHAPv2Packet.from_bytes(response_eap.data)
 
@@ -607,4 +677,3 @@ class RADIUS:
             b += struct.pack('B', random.randint(0, 255))
 
         return b
-
