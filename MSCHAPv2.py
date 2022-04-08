@@ -5,6 +5,84 @@ import binascii
 from Crypto.Hash import MD4
 from Crypto.Cipher import DES
 
+class VendorSpecificPacket:
+    """
+    Vendor Specific Packet
+    """
+
+    """
+    Microsoft Vendor Code
+    """
+    VENDOR_MICROSOFT = 311
+
+    """
+    MSCHAPv2 Challenge type
+    """
+    TYPE_MSCHAP_CHALLENGE = 11
+
+    """
+    MSCHAPv2 Challenge Response type
+    """
+    TYPE_MSCHAP_RESPONSE = 25
+
+    def __init__(self, vendor, type, value):
+        """
+
+        :param vendor: the vendor code
+        :type vendor: int
+        :param type: the type code
+        :type type: int
+        :param value: the value
+        :type value: bytes
+        """
+        self.vendor = vendor
+        self.type = type
+        self.value = value
+
+    def __bytes__(self):
+        """
+        Returns the bytes representation of the packet
+
+        :return: the bytes
+        :rtype: bytes
+        """
+        packet = bytearray()
+        packet += b'\x00\x00'  # for the vendor
+        packet += struct.pack('>H', self.vendor)
+        packet += struct.pack('B', self.type)
+        packet += struct.pack('B', len(self.value) + 2)
+        packet += self.value
+        return packet
+
+class MSCHAPv2Response:
+    """
+    MSCHAPv2 (legacy) response
+    """
+
+    def __init__(self, challenge, response):
+        """
+
+        :param challenge: the peer challenge
+        :type challenge: bytes
+        :param response: the challenge response
+        :type response: bytes
+        """        
+        self.challenge = challenge
+        self.response = response
+
+    def __bytes__(self):
+        """
+        Returns the bytes representation of the response
+
+        :return: the bytes
+        :rtype: bytes
+        """
+        packet = bytearray()
+        packet += b'\x00' * 2
+        packet += self.challenge
+        packet += b'\x00' * 8
+        packet += self.response
+        return packet
 
 class MSCHAPv2Packet:
     """
@@ -338,3 +416,4 @@ class MSCHAPv2Crypto:
             key += struct.pack('B', odd_parity[i])
 
         return key
+    
