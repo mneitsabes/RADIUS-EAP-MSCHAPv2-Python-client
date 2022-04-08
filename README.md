@@ -1,14 +1,14 @@
-# RADIUS EAP-MSCHAPv2 Client
+# RADIUS EAP-MSCHAPv2 and MSCHAPv2 Client
 
-A pure Python 3 RADIUS EAP-MSCHAPv2 client implementation.
+A pure Python 3 RADIUS EAP-MSCHAPv2 and MSCHAPv2 client implementation.
 
 # Explanation
 
 This project was developped because no RADIUS client library supports EAP-MSCHAPv2 (A ticket is open for the pyrad 
 library, see [here](https://github.com/pyradius/pyrad/issues/40)).
 
-This library **only supports** EAP-MSCHAPv2. This code has been tested with Microsoft Windows Server 2016 Network 
-Policy Server.
+This library **only supports** EAP-MSCHAPv2 and (legacy MSCHAPv2). This code has been tested with Microsoft Windows 
+Server 2016 Network Policy Server and FreeRADIUS 3.0.25.
 
 # Usage
 
@@ -22,6 +22,9 @@ username = 'myuser'
 password = 'mypassword!'
 
 r = RADIUS(radius_host, radius_secret, radius_nas_ip, radius_nas_id)
+
+# legacy MSCHAPv2 (no EAP)
+r = RADIUS(radius_host, radius_secret, radius_nas_ip, radius_nas_id, eap=False)
 print(r.is_credential_valid(username, password))</pre>
 
 
