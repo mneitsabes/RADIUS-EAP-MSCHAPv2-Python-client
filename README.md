@@ -7,7 +7,7 @@ A pure Python 3 RADIUS EAP-MSCHAPv2 and MSCHAPv2 client implementation.
 This project was developped because no RADIUS client library supports EAP-MSCHAPv2 (A ticket is open for the pyrad 
 library, see [here](https://github.com/pyradius/pyrad/issues/40)).
 
-This library **only supports** EAP-MSCHAPv2 and (legacy MSCHAPv2). This code has been tested with Microsoft Windows 
+This library **only supports** EAP-MSCHAPv2 and (legacy) MSCHAPv2. This code has been tested with Microsoft Windows 
 Server 2016 Network Policy Server and FreeRADIUS 3.0.25.
 
 # Installation

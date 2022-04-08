@@ -5,8 +5,8 @@ import random
 
 from Crypto.Hash import HMAC, MD5
 
-from .EAPPacket import EAPPacket
-from .MSCHAPv2 import MSCHAPv2Packet, MSCHAPv2Crypto, VendorSpecificPacket, MSCHAPv2Response
+from EAPPacket import EAPPacket
+from MSCHAPv2 import MSCHAPv2Packet, MSCHAPv2Crypto, VendorSpecificPacket, MSCHAPv2Response
 
 
 class RADIUSPacket:
@@ -524,8 +524,8 @@ class RADIUS:
             state = response_packet.get_raw_attribute(24)
             packet_to_send = RADIUSPacket(RADIUSPacket.TYPE_ACCESS_REQUEST, self.authenticator)
             packet_to_send.set_attribute(1, username)
-            packet_to_send.set_attribute(79, EAPPacket.legacyNak(response_eap.id))
             packet_to_send.set_raw_attribute(24, state)
+            packet_to_send.set_attribute(79, EAPPacket.legacyNak(response_eap.id))
             packet_to_send.set_include_message_authenticator()
             
             response_packet = self._send_and_read(packet_to_send)
@@ -534,10 +534,10 @@ class RADIUS:
 
             response_eap = EAPPacket.from_bytes(response_packet.get_raw_attribute(79)[2:])
             if response_eap.code != EAPPacket.CODE_REQUEST:
-                raise ValueError('Stage 1b : the server doesn\'t respond as expected')
+                raise ValueError('Stage 1 : the server doesn\'t respond as expected')
 
         if response_eap.type != EAPPacket.TYPE_EAP_MS_AUTH:
-            raise ValueError('Stage 1b : the server doesn\'t respond as expected')
+            raise ValueError('Stage 1 : the server doesn\'t respond as expected')
 
         response_eap_mschap2 = MSCHAPv2Packet.from_bytes(response_eap.data)
 
