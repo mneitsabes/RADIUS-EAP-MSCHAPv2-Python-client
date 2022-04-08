@@ -679,3 +679,4 @@ class RADIUS:
             b += struct.pack('B', random.randint(0, 255))
 
         return b
+
