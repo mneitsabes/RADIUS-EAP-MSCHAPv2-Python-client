@@ -6,7 +6,7 @@ import random
 from Crypto.Hash import HMAC, MD5
 
 from .EAPPacket import EAPPacket
-from .MSCHAPv2 import MSCHAPv2Packet, MSCHAPv2Crypto
+from .MSCHAPv2 import MSCHAPv2Packet, MSCHAPv2Crypto, VendorSpecificPacket, MSCHAPv2Response
 
 
 class RADIUSPacket:
