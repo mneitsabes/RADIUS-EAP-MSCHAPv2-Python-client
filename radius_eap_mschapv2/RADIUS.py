@@ -527,6 +527,9 @@ class RADIUS:
             packet_to_send.set_raw_attribute(24, state)
             packet_to_send.set_attribute(79, EAPPacket.legacyNak(response_eap.id))
             packet_to_send.set_include_message_authenticator()
+
+            if self.nas_identifier:
+                packet_to_send.set_attribute(32, self.nas_identifier)
             
             response_packet = self._send_and_read(packet_to_send)
             
@@ -566,6 +569,9 @@ class RADIUS:
         packet_to_send.set_include_message_authenticator()
         packet_to_send.set_raw_attribute(24, state)
 
+        if self.nas_identifier:
+            packet_to_send.set_attribute(32, self.nas_identifier)
+
         response_packet = self._send_and_read(packet_to_send)
 
         # Stage three :
@@ -599,6 +605,9 @@ class RADIUS:
         packet_to_send.set_attribute(79, EAPPacket.mschapv2(mschapv2_response, response_eap_mschap2.ms_chap_id + 1))
         packet_to_send.set_include_message_authenticator()
         packet_to_send.set_raw_attribute(24, state)
+
+        if self.nas_identifier:
+            packet_to_send.set_attribute(32, self.nas_identifier)
 
         response_packet = self._send_and_read(packet_to_send)
 
